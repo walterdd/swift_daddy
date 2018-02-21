@@ -23,7 +23,7 @@ def send_email():
     email = EmailMessage(
         'Hello',
         'Body goes here',
-        'walter.dasha@gmail.com',
+        'myswiftdaddy@gmail.com',
         ['dasha-walter@yandex.ru']
     )
     email.send()
