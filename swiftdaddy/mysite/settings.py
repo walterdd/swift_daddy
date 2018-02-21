@@ -120,3 +120,12 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+
+
+# SMTP
+
+EMAIL_HOST = "smtp.gmail.com"
+EMAIL_HOST_USER = "walter.dasha@gmail.com"
+EMAIL_HOST_PASSWORD = 'Doom er29'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True

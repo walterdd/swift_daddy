@@ -23,7 +23,7 @@ def send_email():
     email = EmailMessage(
         'Hello',
         'Body goes here',
-        'dasha-walter@yandex.ru',
+        'walter.dasha@gmail.com',
         ['dasha-walter@yandex.ru']
     )
     email.send()
@@ -56,7 +56,7 @@ def text_query(request):
     else:
         return render(request, 'search.html', {})
 
-    # send_email()
+    send_email()
     return render(request, 'search.html', {'email' : 'dwalter@yandex.ru'})
 
 def file_query(request):
