@@ -1,0 +1,21 @@
+{% extends 'desktop.html' %}
+{% block content %}
+
+  <div class="container">
+    <div class="jumbotron margin-jumbotron" style="margin-top: 0%; padding: 5%; padding-top: 2%; padding-bottom: 2%">
+          <p style="font-size: smaller;">Загрузить Excel или TXT файл с доменами:</p>
+          <form action="{% url 'upload_domains' %}" method="post" enctype="multipart/form-data">{% csrf_token %}
+        <!-- COMPONENT START -->
+        <div class="form-group">
+          <div class="input-group input-file">
+              <input type="file" name="domains_file" class="form-control" placeholder='Choose a file...' />
+              <span class="input-group-btn">
+                   <input style="width: 100%" type="submit" class="btn btn-primary" id="submit" value="Go!" />
+              </span>
+          </div>
+        </div>
+      </form>
+  </div>
+
+
+{% endblock content %}
