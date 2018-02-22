@@ -10,8 +10,8 @@ from .models import Domain
 from .domain_lookup import *
 from .preprocess import *
 from .forms import LoginForm
+from time import time
 
-from functools import partial
 from multiprocessing import Pool
 from contextlib import contextmanager
 
@@ -28,7 +28,13 @@ def generate_result(queries):
     result = dict()
     for query in tqdm(queries):
         domain, length, zone = preprocess_domain(query)
+        print('query: {}'.format(query))
+        start_time = time()
         choices = Domain.objects.filter(length__gte=length-2).filter(length__lte=length*2)
+        print('Filter domains: {}'.format(time() - start_time))
+        start_time = time()
+        choices = [domain.name for domain in choices]
+        print('Extract domain names: {}'.format(time() - start_time))
 
         N = len(choices)
         n_workers = 4
@@ -159,6 +165,7 @@ def welcome(request):
         if form.is_valid():
             user = authenticate(username=form.cleaned_data.get('username'), password=form.cleaned_data.get('password'))
             if user is not None:
+                print('user found!')
                 login(request, user)
                 return HttpResponseRedirect('/')
     form = LoginForm()
