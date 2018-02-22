@@ -1,12 +1,26 @@
 from django.shortcuts import render
-from .domain_lookup import *
-from .preprocess import *
 from tqdm import tqdm
 from django.core.mail import EmailMessage, send_mail
 from background_task import background
 from django.template.loader import get_template
+from django.contrib.auth import authenticate, login
+from django.http import HttpResponseRedirect
 
 from .models import Domain
+from .domain_lookup import *
+from .preprocess import *
+from .forms import LoginForm
+
+from functools import partial
+from multiprocessing import Pool
+from contextlib import contextmanager
+
+@contextmanager
+def poolcontext(*args, **kwargs):
+    pool = Pool(*args, **kwargs)
+    yield pool
+    pool.terminate()
+
 
 @background(schedule=0)
 def generate_result(queries):
@@ -18,9 +32,22 @@ def generate_result(queries):
     for query in tqdm(queries):
         domain, length, zone = preprocess_domain(query)
         choices = Domain.objects.filter(length__gte=length-2).filter(length__lte=length*2)
-        res = findMatches(generator(choices), domain)
-        res = [r[0] for r in res]
-        result[query] = res
+
+        N = len(choices)
+        n_workers = 4
+        chunk = N // n_workers
+        args = zip([generator(choices[i * chunk : i * chunk + chunk]) for i in range(n_workers)],
+                   repeat(domain, n_workers))
+        with poolcontext(processes=n_workers) as pool:
+            res = pool.starmap(findMatches, args)
+
+        final_res = []
+        for r in res:
+            final_res += r
+        final_res = sorted(final_res, key=lambda x: x[1])
+        final_res = final_res[:20]
+        final_res = [r[0] for r in final_res]
+        result[query] = final_res
     result = pd.DataFrame(result)
 
     preview = ', '.join(queries[:3])
@@ -47,6 +74,21 @@ def read_database(file):
         name, length, zone = preprocess_domain(name)
         if zone is None:
             continue
+
+        # if length >= 15:
+        #     continue
+        #
+        # def count_alphas(name):
+        #     alphas = 0
+        #     for c in name:
+        #         if c.isalpha():
+        #             alphas += 1
+        #     return float(alphas) / len(name)
+        #
+        # alphas = count_alphas(name)
+        # if alphas < 0.7:
+        #     continue
+        #
         domain = Domain()
         domain.name = name
         domain.length = length
@@ -102,6 +144,7 @@ def text_query(request):
 
     return render(request, 'search.html', {'email' : 'dwalter@yandex.ru'})
 
+
 def file_query(request):
     if request.method == "POST":
         file = request.FILES['file_query']
@@ -111,3 +154,15 @@ def file_query(request):
     generate_result(queries)
 
     return render(request, 'search.html', {'email' : 'dwalter@yandex.ru'})
+
+
+def welcome(request):
+    if request.method == 'POST':
+        form = LoginForm(request.POST)
+        if form.is_valid():
+            user = authenticate(username=form.cleaned_data.get('username'), password=form.cleaned_data.get('password'))
+            if user is not None:
+                login(request, user)
+                return HttpResponseRedirect('/')
+    form = LoginForm()
+    return render(request, 'welcome.html', {'form' : form})

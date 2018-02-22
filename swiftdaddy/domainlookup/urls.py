@@ -9,4 +9,5 @@ urlpatterns = [
     url(r'^upload_domains', views.upload_domains, name='upload_domains'),
     url(r'^card$', views.card, name='card'),
     url(r'^greetings$', views.greetings, name='greetings'),
+    url(r'^welcome$', views.welcome, name='welcome'),
 ]
