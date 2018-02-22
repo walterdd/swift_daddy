@@ -24,9 +24,6 @@ def poolcontext(*args, **kwargs):
 
 @background(schedule=0)
 def generate_result(queries):
-    def generator(choices):
-        for choice in choices:
-            yield choice.name
     queries = [query.strip() for query in queries]
     result = dict()
     for query in tqdm(queries):
@@ -36,7 +33,7 @@ def generate_result(queries):
         N = len(choices)
         n_workers = 4
         chunk = N // n_workers
-        args = zip([generator(choices[i * chunk : i * chunk + chunk]) for i in range(n_workers)],
+        args = zip([choices[i * chunk : i * chunk + chunk] for i in range(n_workers)],
                    repeat(domain, n_workers))
         with poolcontext(processes=n_workers) as pool:
             res = pool.starmap(findMatches, args)
