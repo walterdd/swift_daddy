@@ -7,4 +7,6 @@ urlpatterns = [
     url(r'^file_query$', views.file_query, name='file_query'),
     url(r'^database$', views.database, name='database'),
     url(r'^upload_domains', views.upload_domains, name='upload_domains'),
+    url(r'^card$', views.card, name='card'),
+    url(r'^greetings$', views.greetings, name='greetings'),
 ]

@@ -1,71 +1,113 @@
 from django.shortcuts import render
-from .process import *
+from .domain_lookup import *
+from .preprocess import *
 from tqdm import tqdm
-from django.core.mail import EmailMessage
+from django.core.mail import EmailMessage, send_mail
+from background_task import background
+from django.template.loader import get_template
 
 from .models import Domain
 
-def read_input(file):
-    for line in tqdm(file.readlines()):
-        line = line.decode('UTF-8').strip()
+@background(schedule=0)
+def generate_result(queries):
+    def generator(choices):
+        for choice in choices:
+            yield choice.name
+    queries = [query.strip() for query in queries]
+    result = dict()
+    for query in tqdm(queries):
+        domain, length, zone = preprocess_domain(query)
+        choices = Domain.objects.filter(length__gte=length-2).filter(length__lte=length*2)
+        res = findMatches(generator(choices), domain)
+        res = [r[0] for r in res]
+        result[query] = res
+    result = pd.DataFrame(result)
+
+    preview = ', '.join(queries[:3])
+    preview += ' и др.' if len(queries) > 3 else ''
+    email = EmailMessage(
+        'SwiftDaddy результаты для запросов: {}'.format(preview),
+        'Привет, Митя! \nЛови похожие домены по твоим запросам: {} в приложенном к письму файле.'.format(preview),
+        'myswiftdaddy@gmail.com',
+        ['dasha-walter@yandex.ru']
+    )
+    file = result.to_csv(sep=';')
+    email.attach('{}.csv'.format(preview), file, 'text/csv')
+    email.send()
+
+@background(schedule=0)
+def read_database(file):
+    filelines = file.split('\n')
+    for line in tqdm(filelines):
+        line = line.strip()
         data = line.split(';')
         if len(data) != 5:
             continue
         name, registrar, start_date, end_date, delegated = data
+        name, length, zone = preprocess_domain(name)
+        if zone is None:
+            continue
         domain = Domain()
         domain.name = name
+        domain.length = length
+        domain.zone = zone
         domain.registrar = registrar
         domain.start_date = start_date
         domain.end_date = end_date
         domain.save()
 
-def send_email():
-    email = EmailMessage(
-        'Hello',
-        'Body goes here',
-        'myswiftdaddy@gmail.com',
-        ['dasha-walter@yandex.ru']
-    )
-    email.send()
+# @background(schedule=0)
+def send_greetings():
+    template = get_template('cake.html')
+    content = template.render()
+    send_mail(subject='Happy Birthday, SwiftDaddy!',
+              message='',
+              html_message=content,
+              from_email='myswiftdaddy@gmail.com',
+              recipient_list=['dasha-walter@yandex.ru'])
+    print('greetings sent')
 
-
+def greetings(request):
+    print('sending greetings')
+    send_greetings()
+    return render(request, 'cake.html', {})
 
 def desktop(request):
     return render(request, 'search.html', {})
+
+def card(request):
+    return render(request, 'card.html', {})
 
 def database(request):
     return render(request, 'database.html', {})
 
 def upload_domains(request):
-    print('upload_domains')
     if request.method == "POST":
         Domain.objects.all().delete()
         domains_file = request.FILES['domains_file']
-        print('domains_file', domains_file)
-        read_input(domains_file)
+        read_database(domains_file.read().decode('UTF-8'), schedule=0)
     else:
         return render(request, 'search.html', {})
 
     return render(request, 'search.html', {})
 
 def text_query(request):
-    print('text_query')
     if request.method == "GET":
         search_text = request.GET['text_query']
-        print('search_text', search_text)
     else:
         return render(request, 'search.html', {})
 
-    send_email()
+    queries = search_text.split(',')
+    generate_result(queries)
+
     return render(request, 'search.html', {'email' : 'dwalter@yandex.ru'})
 
 def file_query(request):
-    print('file_query')
     if request.method == "POST":
-        search_text = request.FILES['file_query']
-        print('search_text', search_text)
+        file = request.FILES['file_query']
     else:
-        search_text = ''
         return render(request, 'search.html', {})
+    queries = file.read().decode('UTF-8').split('\n')
+    generate_result(queries)
 
     return render(request, 'search.html', {'email' : 'dwalter@yandex.ru'})
