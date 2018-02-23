@@ -24,15 +24,28 @@ def poolcontext(*args, **kwargs):
 
 @background(schedule=0)
 def generate_result(queries):
-    N = 20
+    N_results = 20
     queries = [query.strip() for query in queries]
+    start_with = dict()
+    end_with = dict()
     result = dict()
     for query in tqdm(queries):
         domain, length, zone = preprocess_domain(query)
         print('query: {}'.format(query))
+
         start_time = time()
         choices = Domain.objects.filter(length__gte=length-2).filter(length__lte=length*2)
         print('Filter domains: {}'.format(time() - start_time))
+
+        start_time = time()
+        start_with_choices = Domain.objects.filter(name__startswith=domain)
+        print('Start with selection: {}'.format(time() - start_time))
+        start_with[query] = [choice.name for choice in start_with_choices]
+
+        start_time = time()
+        end_with_choices = Domain.objects.filter(name__endswith=domain)
+        print('End with selection: {}'.format(time() - start_time))
+        end_with[query] = [choice.name for choice in end_with_choices]
 
         N = len(choices)
         n_workers = 4
@@ -46,10 +59,13 @@ def generate_result(queries):
         for r in res:
             final_res += r
         final_res = sorted(final_res, key=lambda x: x[1])
-        final_res = final_res[:N]
+        final_res = final_res[:N_results]
         final_res = [r[0] for r in final_res]
         result[query] = final_res
+
     result = pd.DataFrame(result)
+    start_with = pd.DataFrame(start_with)
+    end_with = pd.DataFrame(end_with)
 
     preview = ', '.join(queries[:3])
     preview += ' и др.' if len(queries) > 3 else ''
@@ -59,7 +75,7 @@ def generate_result(queries):
         'myswiftdaddy@gmail.com',
         ['dasha-walter@yandex.ru']
     )
-    file = result.to_csv(sep=';')
+    file = result.to_csv(sep=';') + '\n\nStart matches:\n' + start_with.to_csv(sep=';') + '\n\nEnd matches:\n' + end_with.to_csv(sep=';')
     email.attach('{}.csv'.format(preview), file, 'text/csv')
     email.send()
 
@@ -116,7 +132,7 @@ def send_greetings():
 
 def greetings(request):
     print('sending greetings')
-    send_greetings()
+    # send_greetings()
     return render(request, 'cake.html', {})
 
 def desktop(request):
