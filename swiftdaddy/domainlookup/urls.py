@@ -10,4 +10,5 @@ urlpatterns = [
     url(r'^card$', views.card, name='card'),
     url(r'^greetings$', views.greetings, name='greetings'),
     url(r'^welcome$', views.welcome, name='welcome'),
+    url(r'^confetti$', views.confetti, name='confetti'),
 ]

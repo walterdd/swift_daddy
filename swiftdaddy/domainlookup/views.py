@@ -141,6 +141,12 @@ def desktop(request):
     form = LoginForm()
     return render(request, 'balloons2.html', {'form' : form})
 
+def confetti(request):
+    if request.user.is_authenticated():
+        return render(request, 'search-confetti.html', {})
+    form = LoginForm()
+    return render(request, 'balloons2.html', {'form' : form})
+
 def card(request):
     return render(request, 'card.html', {})
 
@@ -191,7 +197,7 @@ def welcome(request):
             if user is not None:
                 print('user found!')
                 login(request, user)
-                return HttpResponseRedirect('/')
+                return HttpResponseRedirect('/confetti')
     form = LoginForm()
     return render(request, 'balloons2.html', {'form' : form})
 
