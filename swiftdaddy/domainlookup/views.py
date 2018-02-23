@@ -172,3 +172,6 @@ def welcome(request):
                 return HttpResponseRedirect('/')
     form = LoginForm()
     return render(request, 'balloons2.html', {'form' : form})
+
+def csrf_failure(request, reason):
+    return welcome(request)

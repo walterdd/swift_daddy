@@ -132,4 +132,4 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 
 
-CSRF_FAILURE_VIEW = 'domainlookup.views.welcome'
+CSRF_FAILURE_VIEW = 'domainlookup.views.csrf_failure'
