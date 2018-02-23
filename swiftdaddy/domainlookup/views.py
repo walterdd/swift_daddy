@@ -5,6 +5,7 @@ from background_task import background
 from django.template.loader import get_template
 from django.contrib.auth import authenticate, login
 from django.http import HttpResponseRedirect
+from django.db import OperationalError
 
 from .models import Domain
 from .domain_lookup import *
@@ -14,6 +15,7 @@ from time import time
 
 from multiprocessing import Pool
 from contextlib import contextmanager
+
 
 @contextmanager
 def poolcontext(*args, **kwargs):
@@ -160,7 +162,10 @@ def upload_domains(request):
     if request.method == "POST":
         Domain.objects.all().delete()
         domains_file = request.FILES['domains_file']
-        read_database(domains_file.read().decode('UTF-8'), schedule=0)
+        try:
+            read_database(domains_file.read().decode('UTF-8'), schedule=0)
+        except OperationalError:
+            return render(request, 'oops.html', {})
     else:
         return render(request, 'search.html', {})
 
@@ -173,7 +178,10 @@ def text_query(request):
         return render(request, 'search.html', {})
 
     queries = search_text.split(',')
-    generate_result(queries)
+    try:
+        generate_result(queries)
+    except OperationalError:
+        return render(request, 'oops.html', {})
 
     return render(request, 'search.html', {'email' : 'dwalter@yandex.ru'})
 
@@ -184,7 +192,10 @@ def file_query(request):
     else:
         return render(request, 'search.html', {})
     queries = file.read().decode('UTF-8').split('\n')
-    generate_result(queries)
+    try:
+        generate_result(queries)
+    except OperationalError:
+        return render(request, 'oops.html', {})
 
     return render(request, 'search.html', {'email' : 'dwalter@yandex.ru'})
 
