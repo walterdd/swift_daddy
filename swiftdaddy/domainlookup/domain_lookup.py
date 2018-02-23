@@ -5,6 +5,8 @@ import re
 import pandas as pd
 from itertools import permutations, product, repeat
 
+from .models import Domain
+
 class CommonReplacements:
     def __init__(self, list_of_pairs):
         self.dict_ = {}
@@ -332,7 +334,7 @@ class DomainMatcher(object):
         # return top N candidates
         return candidates[:N]
 
-def findMatches(all_choices, query):
+def findMatches(start_id, chunk, query):
     COMMON_REPLACEMENTS = [("v", "u"),
                            ("zh", "g"), ("zh", "ge"), ("zh", "j"), ("zh", "je"),
                            ("k", "c"), ("ks", "x"), ("ks", "z"), ("k", "ch"),
@@ -351,6 +353,7 @@ def findMatches(all_choices, query):
                            ("h", "x"),
                            ]
     N = 20
+    all_choices = Domain.objects.filter(id__gte=start_id*chunk).filter(id__lte=start_id * chunk + chunk)
     all_choices = [domain.name for domain in all_choices]
     repl_dict = CommonReplacements(COMMON_REPLACEMENTS)
     domain_matcher = DomainMatcher(repl_dict, verbalize=False)

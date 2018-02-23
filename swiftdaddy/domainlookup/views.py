@@ -37,6 +37,14 @@ def generate_result(queries):
         choices = Domain.objects.filter(length__gte=length-2).filter(length__lte=length*2)
         print('Filter domains: {}'.format(time() - start_time))
 
+        N = 4640280 # database size
+        n_workers = 4
+        chunk = N // n_workers
+        args = zip([i for i in range(n_workers)], [chunk for _ in range(n_workers)], repeat(domain, n_workers))
+        print('Start map')
+        with poolcontext(processes=n_workers) as pool:
+            res = pool.starmap(findMatches, args)
+
         start_time = time()
         start_with_choices = Domain.objects.filter(name__startswith=domain)
         print('Start with selection: {}'.format(time() - start_time))
@@ -46,14 +54,6 @@ def generate_result(queries):
         end_with_choices = Domain.objects.filter(name__endswith=domain)
         print('End with selection: {}'.format(time() - start_time))
         end_with[query] = [choice.name for choice in end_with_choices]
-
-        N = len(choices)
-        n_workers = 4
-        chunk = N // n_workers
-        args = zip([Domain.objects.filter(id__gte=i*chunk).filter(id__lte=i * chunk + chunk)
-                   for i in range(n_workers)], repeat(domain, n_workers))
-        with poolcontext(processes=n_workers) as pool:
-            res = pool.starmap(findMatches, args)
 
         final_res = []
         for r in res:
