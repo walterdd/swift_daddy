@@ -103,7 +103,7 @@ def read_database(file):
 
         domain_id += 1
 
-# @background(schedule=0)
+@background(schedule=0)
 def send_greetings():
     template = get_template('cake.html')
     content = template.render()
@@ -120,13 +120,19 @@ def greetings(request):
     return render(request, 'cake.html', {})
 
 def desktop(request):
-    return render(request, 'search.html', {})
+    if request.user.is_authenticated():
+        return render(request, 'search.html', {})
+    form = LoginForm()
+    return render(request, 'balloons2.html', {'form' : form})
 
 def card(request):
     return render(request, 'card.html', {})
 
 def database(request):
-    return render(request, 'database.html', {})
+    if request.user.is_authenticated():
+        return render(request, 'database.html', {})
+    form = LoginForm()
+    return render(request, 'balloons2.html', {'form' : form})
 
 def upload_domains(request):
     if request.method == "POST":
