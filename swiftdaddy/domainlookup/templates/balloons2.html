@@ -608,6 +608,19 @@
     <div class="jumbotron margin-jumbotron" style="background-color: #ffba4c; padding: 3%; margin-top:1%">
 <div style="color: #050742; font-size: 200%;" > login: dwalter</div> 
 <div style="color: #050742; font-size: 200%;" > password: swallow</div>
+      <form action="{% url 'welcome' %}" method="POST" style="margin-left: 8%; margin-right: 8%">
+          {% csrf_token %}
+          <p>{{ error_msg }}</p>
+          <div class="form-group">
+            <label for="username">Login:</label>
+            {{ form.username }}
+          </div>
+          <div class="form-group">
+            <label for="password">Password:</label>
+            {{ form.password }}
+          </div>
+          <button type="submit" class="btn btn-default">Submit</button>
+        </form>
     </div> 
     <a href="https://swiftdaddy.pythonanywhere.com"><button type="button" class="btn btn-dark" style="background-color: #050444; font-size: 200%;">Поехали!</button></a>
   </div>

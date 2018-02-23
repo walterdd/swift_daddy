@@ -351,7 +351,7 @@ def findMatches(all_choices, query):
                            ("h", "x"),
                            ]
     N = 20
-
+    all_choices = [domain.name for domain in all_choices]
     repl_dict = CommonReplacements(COMMON_REPLACEMENTS)
     domain_matcher = DomainMatcher(repl_dict, verbalize=False)
     results = domain_matcher.searchNBest(N, all_choices, query)

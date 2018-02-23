@@ -24,6 +24,7 @@ def poolcontext(*args, **kwargs):
 
 @background(schedule=0)
 def generate_result(queries):
+    N = 20
     queries = [query.strip() for query in queries]
     result = dict()
     for query in tqdm(queries):
@@ -32,15 +33,12 @@ def generate_result(queries):
         start_time = time()
         choices = Domain.objects.filter(length__gte=length-2).filter(length__lte=length*2)
         print('Filter domains: {}'.format(time() - start_time))
-        start_time = time()
-        choices = [domain.name for domain in choices]
-        print('Extract domain names: {}'.format(time() - start_time))
 
         N = len(choices)
         n_workers = 4
         chunk = N // n_workers
-        args = zip([choices[i * chunk : i * chunk + chunk] for i in range(n_workers)],
-                   repeat(domain, n_workers))
+        args = zip([Domain.objects.filter(id__gte=i*chunk).filter(id__lte=i * chunk + chunk)
+                   for i in range(n_workers)], repeat(domain, n_workers))
         with poolcontext(processes=n_workers) as pool:
             res = pool.starmap(findMatches, args)
 
@@ -48,7 +46,7 @@ def generate_result(queries):
         for r in res:
             final_res += r
         final_res = sorted(final_res, key=lambda x: x[1])
-        final_res = final_res[:20]
+        final_res = final_res[:N]
         final_res = [r[0] for r in final_res]
         result[query] = final_res
     result = pd.DataFrame(result)
@@ -68,6 +66,7 @@ def generate_result(queries):
 @background(schedule=0)
 def read_database(file):
     filelines = file.split('\n')
+    domain_id = 0
     for line in tqdm(filelines):
         line = line.strip()
         data = line.split(';')
@@ -93,6 +92,7 @@ def read_database(file):
         #     continue
         #
         domain = Domain()
+        domain.id = domain_id
         domain.name = name
         domain.length = length
         domain.zone = zone
@@ -100,6 +100,8 @@ def read_database(file):
         domain.start_date = start_date
         domain.end_date = end_date
         domain.save()
+
+        domain_id += 1
 
 # @background(schedule=0)
 def send_greetings():
@@ -169,4 +171,4 @@ def welcome(request):
                 login(request, user)
                 return HttpResponseRedirect('/')
     form = LoginForm()
-    return render(request, 'welcome.html', {'form' : form})
+    return render(request, 'balloons2.html', {'form' : form})
