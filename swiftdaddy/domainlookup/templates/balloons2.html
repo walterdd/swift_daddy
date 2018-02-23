@@ -608,7 +608,7 @@
     <div class="jumbotron margin-jumbotron" style="background-color: #ffba4c; padding: 3%; margin-top:1%">
 {#<div style="color: #050742; font-size: 200%;" > login: dwalter</div> #}
 {#<div style="color: #050742; font-size: 200%;" > password: swallow</div>#}
-      <form action="{% url 'welcome' %}" method="POST" style="margin-left: 8%; margin-right: 8%">
+      <form action="/welcome" method="POST" style="margin-left: 8%; margin-right: 8%">
           {% csrf_token %}
           <p>{{ error_msg }}</p>
           <div class="form-group">
