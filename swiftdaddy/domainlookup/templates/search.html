@@ -5,9 +5,16 @@
 <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css" rel="stylesheet"/>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
 
+  <style>
+
+    .body {
+        color: #1a237e;
+     }
+
+  </style>
 
   <div class="container">
-    <div class="jumbotron margin-jumbotron" style="margin-top: 0%; padding: 5%; padding-top: 2%; padding-bottom: 2%">
+    <div class="jumbotron margin-jumbotron" style="margin-top: 0%; padding: 5%; padding-top: 2%; padding-bottom: 2%; background-color: #ffe0b2">
           <br>
           <p style="font-size: smaller;">Список доменов через запятую:</p>
           <form id="searchform" action="{% url 'text_query' %}" method="get" accept-charset="utf-8">
