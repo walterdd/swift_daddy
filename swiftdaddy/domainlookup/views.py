@@ -66,6 +66,20 @@ def generate_result(queries):
         result[query] = final_res
 
     result = pd.DataFrame(result)
+
+    def pad_dict(d):
+        values = d.values()
+        length = max([len(val) for val in values])
+        for key in d.keys():
+            cur_len = len(d[key])
+            if cur_len < length:
+                for _ in range(length-cur_len):
+                    d[key].append(None)
+        return d
+
+    pad_dict(start_with)
+    pad_dict(end_with)
+
     start_with = pd.DataFrame(start_with)
     end_with = pd.DataFrame(end_with)
 
@@ -75,7 +89,7 @@ def generate_result(queries):
         'SwiftDaddy результаты для запросов: {}'.format(preview),
         'Привет, Митя! \nЛови похожие домены по твоим запросам: {} в приложенном к письму файле.'.format(preview),
         'myswiftdaddy@gmail.com',
-        ['dasha-walter@yandex.ru']
+        ['dwalter@yandex.ru']
     )
     file = result.to_csv(sep=';') + '\n\nStart matches:\n' + start_with.to_csv(sep=';') + '\n\nEnd matches:\n' + end_with.to_csv(sep=';')
     email.attach('{}.csv'.format(preview), file, 'text/csv')
