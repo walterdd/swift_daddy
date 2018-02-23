@@ -130,3 +130,6 @@ EMAIL_HOST_USER = "myswiftdaddy@gmail.com"
 EMAIL_HOST_PASSWORD = 'Doom er29'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
+
+
+CSRF_FAILURE_VIEW = 'domainlookup.views.welcome'
