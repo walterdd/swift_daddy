@@ -18,7 +18,7 @@
   <body>
 
 
-  <nav class="navbar navbar-default btn-primary"">
+  <nav class="navbar navbar-default">
   <div class="container-fluid">
     <!-- Brand and toggle get grouped for better mobile display -->
     <div class="navbar-header">
@@ -27,14 +27,14 @@
         <span class="glyphicon glyphicon-briefcase" ></span>
       </button>
       </a>
-      <a class="navbar-brand" style="color: white;" href="{% url "greetings"  %}">Swift Daddy</a>
+      <a class="navbar-brand" href="{% url "greetings"  %}">Swift Daddy</a>
     </div>
 
     <!-- Collect the nav links, forms, and other content for toggling -->
     <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
 
-      <ul class="nav navbar-nav navbar-right" style="color: white;">
-        <li style="color: white;"><a href="{% url "database"  %}">обновить базу доменов <span style="color: white;" class="glyphicon glyphicon-briefcase"></span> </a></li>
+      <ul class="nav navbar-nav navbar-right">
+        <li><a href="{% url "database"  %}">обновить базу доменов <span class="glyphicon glyphicon-briefcase"></span> </a></li>
       </ul>
     </div><!-- /.navbar-collapse -->
   </div><!-- /.container-fluid -->
