@@ -90,8 +90,6 @@ def generate_result(queries, email_address, username):
         final_res = [' '.join(res) for res in final_res]
         result[query] = final_res
 
-    result = pd.DataFrame(result)
-
     def pad_dict(d):
         values = d.values()
         length = max([len(val) for val in values])
@@ -104,7 +102,9 @@ def generate_result(queries, email_address, username):
 
     pad_dict(start_with)
     pad_dict(end_with)
+    pad_dict(result)
 
+    result = pd.DataFrame(result)
     start_with = pd.DataFrame(start_with)
     end_with = pd.DataFrame(end_with)
 
