@@ -51,7 +51,8 @@ def generate_result(queries, email_address, username):
         domain_wo_hy = removeNonAlphanum(domain)
         if domain_wo_hy != domain:
             for d in Domain.objects.filter(name__startswith=domain_wo_hy):
-                start_with[query].append(d.name)
+                if d.name not in all_domains:
+                    start_with[query].append(d.name)
         print('Start with selection: {}'.format(time() - start_time))
         start_with[query] = sorted(start_with[query])
         all_domains.update(start_with[query])
@@ -61,7 +62,8 @@ def generate_result(queries, email_address, username):
         end_with[query] = [choice.name for choice in end_with_choices if choice.name not in all_domains]
         if domain_wo_hy != domain:
             for d in Domain.objects.filter(name__endswith=domain_wo_hy):
-                end_with[query].append(d.name)
+                if d.name not in all_domains:
+                    end_with[query].append(d.name)
         print('End with selection: {}'.format(time() - start_time))
         end_with[query] = sorted(end_with[query])
         all_domains.update(end_with[query])
