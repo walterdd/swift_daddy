@@ -261,7 +261,11 @@ def welcome(request):
     if request.method == 'POST':
         form = LoginForm(request.POST)
         if form.is_valid():
-            user = authenticate(username=form.cleaned_data.get('username'), password=form.cleaned_data.get('password'))
+            try:
+                user = authenticate(username=form.cleaned_data.get('username'), password=form.cleaned_data.get('password'))
+            except OperationalError:
+                form = LoginForm()
+                return render(request, 'welcome.html', {'form' : form})
             if user is not None:
                 print('user found!')
                 login(request, user)
