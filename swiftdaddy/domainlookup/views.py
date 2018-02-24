@@ -1,3 +1,5 @@
+import sys
+
 from django.shortcuts import render
 from tqdm import tqdm
 from django.core.mail import EmailMessage, send_mail
@@ -7,10 +9,11 @@ from django.contrib.auth import authenticate, login
 from django.http import HttpResponseRedirect
 from django.db import OperationalError
 
-from .models import Domain
+from .models import Domain, Meta
 from .domain_lookup import *
 from .preprocess import *
 from .forms import LoginForm
+from .utils import *
 from time import time
 
 from multiprocessing import Pool
@@ -25,8 +28,8 @@ def poolcontext(*args, **kwargs):
 
 
 @background(schedule=0)
-def generate_result(queries):
-    N_results = 20
+def generate_result(queries, email_address, username):
+    N_RESULTS = 30
     queries = [query.strip() for query in queries]
     start_with = dict()
     end_with = dict()
@@ -35,34 +38,56 @@ def generate_result(queries):
         domain, length, zone = preprocess_domain(query)
         print('query: {}'.format(query))
 
-        start_time = time()
-        choices = Domain.objects.filter(length__gte=length-2).filter(length__lte=length*2)
-        print('Filter domains: {}'.format(time() - start_time))
+        N = Domain.objects.all().count()
+        print('Domain database size: %d' % N)
+        print('Number of candidate domains: %d' %
+              Domain.objects.filter(length__gte=length-2).filter(length__lte=length+5).count())
 
-        N = 4640280 # database size
-        n_workers = 4
-        chunk = N // n_workers
-        args = zip([i for i in range(n_workers)], [chunk for _ in range(n_workers)], repeat(domain, n_workers))
-        print('Start map')
-        with poolcontext(processes=n_workers) as pool:
-            res = pool.starmap(findMatches, args)
+        all_domains = set()
 
         start_time = time()
         start_with_choices = Domain.objects.filter(name__startswith=domain)
+        start_with[query] = [choice.name for choice in start_with_choices if choice.name not in all_domains]
+        domain_wo_hy = removeNonAlphanum(domain)
+        if domain_wo_hy != domain:
+            for d in Domain.objects.filter(name__startswith=domain_wo_hy):
+                start_with[query].append(d.name)
         print('Start with selection: {}'.format(time() - start_time))
-        start_with[query] = [choice.name for choice in start_with_choices]
+        start_with[query] = sorted(start_with[query])
+        all_domains.update(start_with[query])
 
         start_time = time()
         end_with_choices = Domain.objects.filter(name__endswith=domain)
+        end_with[query] = [choice.name for choice in end_with_choices if choice.name not in all_domains]
+        if domain_wo_hy != domain:
+            for d in Domain.objects.filter(name__endswith=domain_wo_hy):
+                end_with[query].append(d.name)
         print('End with selection: {}'.format(time() - start_time))
-        end_with[query] = [choice.name for choice in end_with_choices]
+        end_with[query] = sorted(end_with[query])
+        all_domains.update(end_with[query])
+
+        n_workers = 4
+        chunk = N // n_workers
+        args = zip([N_RESULTS for i in range(n_workers)],
+                   [i for i in range(n_workers)],
+                   [chunk for _ in range(n_workers)],
+                   repeat(domain, n_workers))
+        print('Start map')
+        with poolcontext(processes=n_workers) as pool:
+            res = pool.starmap(findMatches, args)
 
         final_res = []
         for r in res:
             final_res += r
         final_res = sorted(final_res, key=lambda x: x[1])
-        final_res = final_res[:N_results]
-        final_res = [r[0] for r in final_res]
+        final_res = final_res[:N_RESULTS]
+
+        final_res = [r for r in final_res if r[0] not in all_domains]
+        all_domains.update([r[0] for r in final_res])
+
+        for i in range(len(final_res)):
+            final_res[i] = [str(r) for r in final_res[i]]
+        final_res = [' '.join(res) for res in final_res]
         result[query] = final_res
 
     result = pd.DataFrame(result)
@@ -85,14 +110,19 @@ def generate_result(queries):
 
     preview = ', '.join(queries[:3])
     preview += ' и др.' if len(queries) > 3 else ''
+    print('email_address', email_address)
+    file = (result.to_csv(sep='\t') +
+            '\n\nStart matches:\n' + start_with.to_csv(sep='\t', header=None) +
+            '\n\nEnd matches:\n' + end_with.to_csv(sep='\t', header=None))
+
     email = EmailMessage(
         'SwiftDaddy результаты для запросов: {}'.format(preview),
-        'Привет, Митя! \nЛови похожие домены по твоим запросам: {} в приложенном к письму файле.'.format(preview),
+        'Привет, {0}! \nЛови похожие домены по твоим запросам: {1} в приложенном к письму файле.'.format(username,
+                                                                                                         preview),
         'myswiftdaddy@gmail.com',
-        ['dwalter@yandex.ru']
+        [email_address]
     )
-    file = result.to_csv(sep=';') + '\n\nStart matches:\n' + start_with.to_csv(sep=';') + '\n\nEnd matches:\n' + end_with.to_csv(sep=';')
-    email.attach('{}.csv'.format(preview), file, 'text/csv')
+    email.attach('{}.xls'.format(preview), file, 'text/xls')
     email.send()
 
 @background(schedule=0)
@@ -109,20 +139,20 @@ def read_database(file):
         if zone is None:
             continue
 
-        # if length >= 15:
-        #     continue
-        #
-        # def count_alphas(name):
-        #     alphas = 0
-        #     for c in name:
-        #         if c.isalpha():
-        #             alphas += 1
-        #     return float(alphas) / len(name)
-        #
-        # alphas = count_alphas(name)
-        # if alphas < 0.7:
-        #     continue
-        #
+        if length >= 15:
+            continue
+
+        def count_alphas(name):
+            alphas = 0
+            for c in name:
+                if c.isalpha():
+                    alphas += 1
+            return float(alphas) / len(name)
+
+        alphas = count_alphas(name)
+        if alphas < 0.7:
+            continue
+
         domain = Domain()
         domain.id = domain_id
         domain.name = name
@@ -134,6 +164,15 @@ def read_database(file):
         domain.save()
 
         domain_id += 1
+
+    meta = Meta.objects.all()
+    if len(meta) == 0:
+        meta = Meta()
+        meta.n_domains = domain_id
+    else:
+        meta = meta[0]
+        meta.n_domains = domain_id
+    meta.save()
 
 @background(schedule=0)
 def send_greetings():
@@ -155,22 +194,19 @@ def desktop(request):
     if request.user.is_authenticated():
         return render(request, 'search.html', {})
     form = LoginForm()
-    return render(request, 'balloons2.html', {'form' : form})
+    return render(request, 'welcome.html', {'form' : form})
 
 def confetti(request):
     if request.user.is_authenticated():
         return render(request, 'search-confetti.html', {})
     form = LoginForm()
-    return render(request, 'balloons2.html', {'form' : form})
-
-def card(request):
-    return render(request, 'card.html', {})
+    return render(request, 'welcome.html', {'form' : form})
 
 def database(request):
     if request.user.is_authenticated():
         return render(request, 'database.html', {})
     form = LoginForm()
-    return render(request, 'balloons2.html', {'form' : form})
+    return render(request, 'welcome.html', {'form' : form})
 
 def upload_domains(request):
     if request.method == "POST":
@@ -190,14 +226,19 @@ def text_query(request):
         search_text = request.GET['text_query']
     else:
         return render(request, 'search.html', {})
-
-    queries = search_text.split(',')
+    if request.user.is_authenticated():
+        email_address = request.user.email
+    else:
+        form = LoginForm()
+        return render(request, 'welcome.html', {'form' : form})
+    username = request.user.first_name
+    queries = search_text.split()
     try:
-        generate_result(queries)
+        generate_result(queries, email_address, username)
     except OperationalError:
         return render(request, 'oops.html', {})
 
-    return render(request, 'search.html', {'email' : 'dwalter@yandex.ru'})
+    return render(request, 'search.html', {'email' : email_address})
 
 
 def file_query(request):
@@ -224,7 +265,7 @@ def welcome(request):
                 login(request, user)
                 return HttpResponseRedirect('/confetti')
     form = LoginForm()
-    return render(request, 'balloons2.html', {'form' : form})
+    return render(request, 'welcome.html', {'form' : form})
 
 def csrf_failure(request, reason):
     return welcome(request)

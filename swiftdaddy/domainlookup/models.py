@@ -1,5 +1,6 @@
 from django.db import models
 
+
 class Domain(models.Model):
     name = models.CharField(max_length=500)
     zone = models.CharField(max_length=10, null=True)
@@ -10,3 +11,7 @@ class Domain(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class Meta(models.Model):
+    n_domains = models.IntegerField()

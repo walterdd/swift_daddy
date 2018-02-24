@@ -334,7 +334,7 @@ class DomainMatcher(object):
         # return top N candidates
         return candidates[:N]
 
-def findMatches(start_id, chunk, query):
+def findMatches(N_results, start_id, chunk, query):
     COMMON_REPLACEMENTS = [("v", "u"),
                            ("zh", "g"), ("zh", "ge"), ("zh", "j"), ("zh", "je"),
                            ("k", "c"), ("ks", "x"), ("ks", "z"), ("k", "ch"),
@@ -352,10 +352,12 @@ def findMatches(start_id, chunk, query):
                            ("s", "c"),
                            ("h", "x"),
                            ]
-    N = 20
-    all_choices = Domain.objects.filter(id__gte=start_id*chunk).filter(id__lte=start_id * chunk + chunk)
-    all_choices = [domain.name for domain in all_choices]
+    length = len(query)
+    choices = Domain.objects.filter(length__gte=length-2).filter(length__lte=length+5)
+
+    choices = choices.filter(id__gte=start_id*chunk).filter(id__lte=start_id * chunk + chunk)
+    choices = [domain.name for domain in choices]
     repl_dict = CommonReplacements(COMMON_REPLACEMENTS)
     domain_matcher = DomainMatcher(repl_dict, verbalize=False)
-    results = domain_matcher.searchNBest(N, all_choices, query)
+    results = domain_matcher.searchNBest(N_results, choices, query)
     return results

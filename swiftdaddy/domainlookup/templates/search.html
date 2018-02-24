@@ -18,11 +18,11 @@
           <br>
       <p>SwiftDaddy найдет похожие домены</p>
       <hr>
-          <p style="font-size: smaller;">Список доменов через запятую:</p>
+          <p style="font-size: smaller;">Список доменов по одному имени на каждой строке:</p>
           <form id="searchform" action="{% url 'text_query' %}" method="get" accept-charset="utf-8">
             <div class="form-group">
             <div class="input-group input-file">
-                <input name="text_query" id="search" type="text" class="form-control" placeholder="Search for..."/>
+                <textarea name="text_query" id="search" type="text" class="form-control" placeholder="Search for..."></textarea>
               <span class="input-group-btn">
                 <input style="width: 100%" class="btn btn-primary" type="submit" id="submit" value="Swift!">
               </span>
@@ -31,22 +31,22 @@
           </form>
           <br>
 
-       <p style="font-size: smaller;">Загрузить файл:</p>
-
-      <form action="{% url 'file_query' %}" method="post" enctype="multipart/form-data">{% csrf_token %}
-        <!-- COMPONENT START -->
-        <div class="form-group">
-          <div class="input-group input-file">
-              <input type="file" name="file_query" class="form-control" placeholder='Choose a file...' />
-              <span class="input-group-btn">
-                   <input style="width: 100%" type="submit" class="btn btn-primary" id="submit" value="Go!" />
-              </span>
-          </div>
-        </div>
-      </form>
-     <p style="font-size: smaller; font-style: italic; margin-top: 0%">
-       Файл должен состоять из списка доменов по одному имени на каждой строке.
-     </p>
+{#       <p style="font-size: smaller;">Загрузить файл:</p>#}
+{##}
+{#      <form action="{% url 'file_query' %}" method="post" enctype="multipart/form-data">{% csrf_token %}#}
+{#        <!-- COMPONENT START -->#}
+{#        <div class="form-group">#}
+{#          <div class="input-group input-file">#}
+{#              <input type="file" name="file_query" class="form-control" placeholder='Choose a file...' />#}
+{#              <span class="input-group-btn">#}
+{#                   <input style="width: 100%" type="submit" class="btn btn-primary" id="submit" value="Go!" />#}
+{#              </span>#}
+{#          </div>#}
+{#        </div>#}
+{#      </form>#}
+{#     <p style="font-size: smaller; font-style: italic; margin-top: 0%">#}
+{#       Файл должен состоять из списка доменов по одному имени на каждой строке.#}
+{#     </p>#}
     </div>
   </div>
 
